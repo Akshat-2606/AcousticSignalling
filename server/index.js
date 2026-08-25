@@ -116,7 +116,12 @@ function getOrCreateCert(lanIp) {
   const pems = selfsigned.generate(attrs, {
     days: 365,
     keySize: 2048,
-    extensions: [{ name: 'basicConstraints', cA: true }, { name: 'subjectAltName', altNames }],
+    extensions: [
+      { name: 'basicConstraints', cA: true },
+      { name: 'subjectAltName', altNames },
+      { name: 'keyUsage', digitalSignature: true, keyEncipherment: true },
+      { name: 'extKeyUsage', serverAuth: true },
+    ],
   });
 
   fs.mkdirSync(certDir, { recursive: true });
