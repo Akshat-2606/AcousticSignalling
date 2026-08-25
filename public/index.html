@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Acoustic Image Link</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Acoustic Image Link — bare-minimum prototype</h1>
+
+  <section id="status-panel">
+    <p>Device id: <strong id="my-id">connecting...</strong> — role: <strong id="my-role">none</strong></p>
+  </section>
+
+  <section id="control-panel">
+    <h2>Connected devices (assign roles)</h2>
+    <div id="roster"></div>
+  </section>
+
+  <section id="sender-panel" class="hidden">
+    <h2>Sender</h2>
+    <input type="file" id="image-input" accept="image/*" />
+    <img id="original-preview" class="preview" alt="original preview" />
+    <button id="send-btn" disabled>Send</button>
+    <p id="send-progress"></p>
+    <p id="send-stats"></p>
+  </section>
+
+  <section id="receiver-panel" class="hidden">
+    <h2>Receiver</h2>
+    <p id="receiver-status">idle</p>
+    <img id="received-preview" class="preview" alt="received preview" />
+    <p id="received-stats"></p>
+  </section>
+
+  <script src="js/protocol.js"></script>
+  <script src="js/encoder.js"></script>
+  <script src="js/decoder.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
