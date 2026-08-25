@@ -2,12 +2,17 @@
 // Loaded as a plain script (no bundler) so it just defines globals on `window`.
 
 const PROTOCOL = {
-  FREQ_0: 19000, // Hz, bit 0
-  FREQ_1: 19030, // Hz, bit 1 -- 30Hz spacing
+  // DEBUG: audible carrier (800/1000 Hz) so the transmission can be heard
+  // and sanity-checked by ear. Swap back to ~19000/19030 Hz once the
+  // pipeline is confirmed working end-to-end, for the actual near-inaudible
+  // design goal.
+  FREQ_0: 800, // Hz, bit 0
+  FREQ_1: 1000, // Hz, bit 1 -- 200Hz spacing, clearly audible
   // Goertzel frequency resolution = sampleRate / blockSize, and blockSize is
-  // derived from SYMBOL_MS -- needs to be well under the 30Hz tone spacing
-  // above (~10Hz here, at 48kHz) or the two tones become indistinguishable.
-  SYMBOL_MS: 100, // ms per symbol (bit) -> 10 baud
+  // derived from SYMBOL_MS -- needs to be well under the tone spacing above
+  // or the two tones become indistinguishable. 50ms -> ~20Hz resolution,
+  // comfortably under the 200Hz spacing here.
+  SYMBOL_MS: 50, // ms per symbol (bit) -> 20 baud
 
   // Preamble: alternating 0/1/0/1... used by the receiver to find the start
   // of a transmission and lock onto the symbol clock.
