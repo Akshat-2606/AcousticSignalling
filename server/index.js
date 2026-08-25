@@ -11,9 +11,9 @@ const PORT = process.env.PORT || 3443;
 const app = express();
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-const { cert, key } = getOrCreateCert();
+const lanIp = getLanIp();
+const { cert, key } = getOrCreateCert(lanIp);
 const server = https.createServer({ cert, key }, app).listen(PORT, () => {
-  const lanIp = getLanIp();
   console.log(`audio-image-link server listening on:`);
   console.log(`  https://localhost:${PORT}`);
   if (lanIp) console.log(`  https://${lanIp}:${PORT}  (share this with the other device)`);
@@ -90,25 +90,39 @@ function getLanIp() {
   return null;
 }
 
-function getOrCreateCert() {
+function getOrCreateCert(lanIp) {
   const certDir = path.join(__dirname, 'certs');
   const certPath = path.join(certDir, 'cert.pem');
   const keyPath = path.join(certDir, 'key.pem');
+  const metaPath = path.join(certDir, 'meta.json');
 
-  if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
-    return { cert: fs.readFileSync(certPath), key: fs.readFileSync(keyPath) };
+  // Regenerate if missing, or if the LAN IP changed since the cert was made
+  // (e.g. different network) — a cert without the current IP in its SAN
+  // list will be hard-rejected (no bypass option) by mobile browsers.
+  if (fs.existsSync(certPath) && fs.existsSync(keyPath) && fs.existsSync(metaPath)) {
+    const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+    if (meta.lanIp === lanIp) {
+      return { cert: fs.readFileSync(certPath), key: fs.readFileSync(keyPath) };
+    }
   }
 
   const attrs = [{ name: 'commonName', value: 'audio-image-link.local' }];
+  const altNames = [
+    { type: 2, value: 'localhost' }, // DNS
+    { type: 7, ip: '127.0.0.1' }, // IP
+  ];
+  if (lanIp) altNames.push({ type: 7, ip: lanIp });
+
   const pems = selfsigned.generate(attrs, {
     days: 365,
     keySize: 2048,
-    extensions: [{ name: 'basicConstraints', cA: true }],
+    extensions: [{ name: 'basicConstraints', cA: true }, { name: 'subjectAltName', altNames }],
   });
 
   fs.mkdirSync(certDir, { recursive: true });
   fs.writeFileSync(certPath, pems.cert);
   fs.writeFileSync(keyPath, pems.private);
+  fs.writeFileSync(metaPath, JSON.stringify({ lanIp }));
 
   return { cert: pems.cert, key: pems.private };
 }
