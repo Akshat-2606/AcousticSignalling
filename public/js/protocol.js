@@ -3,8 +3,11 @@
 
 const PROTOCOL = {
   FREQ_0: 19000, // Hz, bit 0
-  FREQ_1: 19500, // Hz, bit 1
-  SYMBOL_MS: 20, // ms per symbol (bit) -> 50 baud
+  FREQ_1: 19030, // Hz, bit 1 -- 30Hz spacing
+  // Goertzel frequency resolution = sampleRate / blockSize, and blockSize is
+  // derived from SYMBOL_MS -- needs to be well under the 30Hz tone spacing
+  // above (~10Hz here, at 48kHz) or the two tones become indistinguishable.
+  SYMBOL_MS: 100, // ms per symbol (bit) -> 10 baud
 
   // Preamble: alternating 0/1/0/1... used by the receiver to find the start
   // of a transmission and lock onto the symbol clock.

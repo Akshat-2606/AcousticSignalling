@@ -36,7 +36,7 @@ const Encoder = (() => {
     const osc = audioCtx.createOscillator();
     osc.type = 'sine';
     const gain = audioCtx.createGain();
-    gain.gain.value = 0.8;
+    gain.gain.value = 1.0; // max before clipping -- GainNode values above 1.0 just distort
     osc.connect(gain).connect(audioCtx.destination);
 
     symbols.forEach((bit, i) => {
