@@ -22,6 +22,13 @@ const server = https.createServer({ cert, key }, app).listen(PORT, () => {
   console.log(`is required for microphone access (getUserMedia needs a secure context).`);
 });
 
+server.on('tlsClientError', (err, tlsSocket) => {
+  console.error(`[tlsClientError] from ${tlsSocket.remoteAddress}: ${err.message}`);
+});
+server.on('clientError', (err, socket) => {
+  console.error(`[clientError] from ${socket.remoteAddress}: ${err.message}`);
+});
+
 const wss = new WebSocketServer({ server });
 
 /** @type {Map<string, {id: string, ip: string, role: string|null, ws: import('ws').WebSocket}>} */
