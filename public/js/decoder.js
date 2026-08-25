@@ -97,6 +97,10 @@ const Decoder = (() => {
       if (onDone) onDone({ crcOk, imageUrl: url, byteLength: payloadBytes.length });
 
       resetFrameState();
+      // Drop the worklet back into sync-scan mode so it re-locks to the next
+      // transmission's sync tone rather than continuing to chunk blindly
+      // from its old (now stale) alignment.
+      if (workletNode) workletNode.port.postMessage({ type: 'reset' });
     }
 
     async function start() {
@@ -116,7 +120,9 @@ const Decoder = (() => {
         processorOptions: {
           freq0: PROTOCOL.FREQ_0,
           freq1: PROTOCOL.FREQ_1,
+          freqSync: PROTOCOL.FREQ_SYNC,
           symbolMs: PROTOCOL.SYMBOL_MS,
+          syncMs: PROTOCOL.SYNC_MS,
         },
       });
 

@@ -31,7 +31,9 @@ const Encoder = (() => {
   function playSymbols(symbols, { onProgress, onDone } = {}) {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const symbolSec = PROTOCOL.SYMBOL_MS / 1000;
-    const startTime = audioCtx.currentTime + 0.1; // small lead-in
+    const syncSec = PROTOCOL.SYNC_MS / 1000;
+    const leadTime = audioCtx.currentTime + 0.1; // small lead-in
+    const dataStartTime = leadTime + syncSec;
 
     const osc = audioCtx.createOscillator();
     osc.type = 'sine';
@@ -39,19 +41,23 @@ const Encoder = (() => {
     gain.gain.value = 1.0; // max before clipping -- GainNode values above 1.0 just distort
     osc.connect(gain).connect(audioCtx.destination);
 
+    // Sync tone: lets the receiver find the exact sample where data starts,
+    // instead of guessing symbol-block boundaries.
+    osc.frequency.setValueAtTime(PROTOCOL.FREQ_SYNC, leadTime);
+
     symbols.forEach((bit, i) => {
       const freq = bit === 1 ? PROTOCOL.FREQ_1 : PROTOCOL.FREQ_0;
-      osc.frequency.setValueAtTime(freq, startTime + i * symbolSec);
+      osc.frequency.setValueAtTime(freq, dataStartTime + i * symbolSec);
     });
 
-    osc.start(startTime);
-    const endTime = startTime + symbols.length * symbolSec;
+    osc.start(leadTime);
+    const endTime = dataStartTime + symbols.length * symbolSec;
     osc.stop(endTime);
 
     if (onProgress) {
       const totalMs = symbols.length * PROTOCOL.SYMBOL_MS;
       const tick = () => {
-        const elapsedSec = audioCtx.currentTime - startTime;
+        const elapsedSec = audioCtx.currentTime - dataStartTime;
         const sent = Math.min(symbols.length, Math.max(0, Math.floor(elapsedSec / symbolSec)));
         onProgress(sent, symbols.length);
         if (elapsedSec * 1000 < totalMs) requestAnimationFrame(tick);
@@ -69,7 +75,7 @@ const Encoder = (() => {
   async function sendImage(imgEl, { onProgress, onDone } = {}) {
     const { bytes, width, height } = await compressImage(imgEl);
     const symbols = protocolUtils.buildFrame(bytes);
-    const transmitMs = symbols.length * PROTOCOL.SYMBOL_MS;
+    const transmitMs = PROTOCOL.SYNC_MS + symbols.length * PROTOCOL.SYMBOL_MS;
 
     playSymbols(symbols, { onProgress, onDone });
 

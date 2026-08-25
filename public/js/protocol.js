@@ -14,6 +14,13 @@ const PROTOCOL = {
   // comfortably under the 200Hz spacing here.
   SYMBOL_MS: 50, // ms per symbol (bit) -> 20 baud
 
+  // Sync tone: a third, distinct frequency played for SYNC_MS immediately
+  // before the frame. The receiver fine-scans for its onset to establish a
+  // sample-accurate symbol clock, instead of guessing block boundaries from
+  // whenever its AudioWorklet happened to start.
+  FREQ_SYNC: 600, // Hz -- must be clearly separated from FREQ_0/FREQ_1
+  SYNC_MS: 300,
+
   // Preamble: alternating 0/1/0/1... used by the receiver to find the start
   // of a transmission and lock onto the symbol clock.
   PREAMBLE_SYMBOLS: [0, 1, 0, 1, 0, 1, 0, 1],
