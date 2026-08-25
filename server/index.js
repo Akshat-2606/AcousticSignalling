@@ -1,18 +1,25 @@
+const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const https = require('https');
 const express = require('express');
+const selfsigned = require('selfsigned');
 const { WebSocketServer } = require('ws');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3443;
 
 const app = express();
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-const server = app.listen(PORT, () => {
+const { cert, key } = getOrCreateCert();
+const server = https.createServer({ cert, key }, app).listen(PORT, () => {
   const lanIp = getLanIp();
   console.log(`audio-image-link server listening on:`);
-  console.log(`  http://localhost:${PORT}`);
-  if (lanIp) console.log(`  http://${lanIp}:${PORT}  (share this with the other device)`);
+  console.log(`  https://localhost:${PORT}`);
+  if (lanIp) console.log(`  https://${lanIp}:${PORT}  (share this with the other device)`);
+  console.log(`Uses a self-signed certificate — your browser will warn on first visit.`);
+  console.log(`Click "Advanced" -> "Proceed" (or "visit this website") to accept it; this`);
+  console.log(`is required for microphone access (getUserMedia needs a secure context).`);
 });
 
 const wss = new WebSocketServer({ server });
@@ -81,4 +88,27 @@ function getLanIp() {
     }
   }
   return null;
+}
+
+function getOrCreateCert() {
+  const certDir = path.join(__dirname, 'certs');
+  const certPath = path.join(certDir, 'cert.pem');
+  const keyPath = path.join(certDir, 'key.pem');
+
+  if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+    return { cert: fs.readFileSync(certPath), key: fs.readFileSync(keyPath) };
+  }
+
+  const attrs = [{ name: 'commonName', value: 'audio-image-link.local' }];
+  const pems = selfsigned.generate(attrs, {
+    days: 365,
+    keySize: 2048,
+    extensions: [{ name: 'basicConstraints', cA: true }],
+  });
+
+  fs.mkdirSync(certDir, { recursive: true });
+  fs.writeFileSync(certPath, pems.cert);
+  fs.writeFileSync(keyPath, pems.private);
+
+  return { cert: pems.cert, key: pems.private };
 }
