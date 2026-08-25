@@ -20,6 +20,8 @@ const Decoder = (() => {
     let payloadBits = [];
     let crcBits = [];
     let expectedPayloadBits = 0;
+    let debugSymbolCount = 0;
+    const DEBUG_LOG_SYMBOLS = 40; // covers sync-lock + preamble + length + start of payload
 
     function resetFrameState() {
       state = STATE.LISTENING;
@@ -28,6 +30,7 @@ const Decoder = (() => {
       payloadBits = [];
       crcBits = [];
       expectedPayloadBits = 0;
+      debugSymbolCount = 0;
     }
 
     function report(status, extra) {
@@ -135,6 +138,12 @@ const Decoder = (() => {
       workletNode.port.onmessage = (event) => {
         const { e0, e1 } = event.data;
         const bit = e1 > e0 ? 1 : 0;
+        if (debugSymbolCount < DEBUG_LOG_SYMBOLS) {
+          console.log(
+            `[sym ${debugSymbolCount}] e0=${e0.toFixed(1)} e1=${e1.toFixed(1)} bit=${bit} state=${state}`
+          );
+          debugSymbolCount++;
+        }
         handleBit(bit);
       };
 
